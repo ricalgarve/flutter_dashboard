@@ -23,13 +23,18 @@ extension DashboardItemExtension on DashboardItem {
 }
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final VoidCallback onToggleTheme;
+
+  const HomeScreen({super.key, required this.onToggleTheme});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  bool _isRefreshingAll = false;
+
   Map<DashboardItem, String> dashboardData = {
     DashboardItem.temperatura: '28°C',
     DashboardItem.usuariosAtivos: '124',
@@ -37,22 +42,31 @@ class _HomeScreenState extends State<HomeScreen> {
     DashboardItem.notificacoes: '5',
   };
 
-  bool _isRefreshingAll = false; // controle do loading geral
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 4, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
   void _refreshAll() async {
     setState(() {
       _isRefreshingAll = true;
     });
 
-    // Simula atualização
     await Future.delayed(const Duration(seconds: 2));
 
     setState(() {
       dashboardData = {
         DashboardItem.temperatura: '40°C',
-        DashboardItem.usuariosAtivos: '124',
-        DashboardItem.relatorios: '0 Novos',
-        DashboardItem.notificacoes: '4',
+        DashboardItem.usuariosAtivos: '130',
+        DashboardItem.relatorios: '2 Novos',
+        DashboardItem.notificacoes: '6',
       };
       _isRefreshingAll = false;
     });
@@ -60,6 +74,20 @@ class _HomeScreenState extends State<HomeScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Atualização finalizada.')),
     );
+  }
+
+  Future<String> _refreshCard(DashboardItem item) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    switch (item) {
+      case DashboardItem.temperatura:
+        return '${24 + (5 - 3)}°C';
+      case DashboardItem.usuariosAtivos:
+        return '130';
+      case DashboardItem.relatorios:
+        return '2 Novos';
+      case DashboardItem.notificacoes:
+        return '6';
+    }
   }
 
   List<Widget> buildDashboardItems() {
@@ -115,25 +143,12 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
   }
 
-  Future<String> _refreshCard(DashboardItem item) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    switch (item) {
-      case DashboardItem.temperatura:
-        return '${24 + (5 - 3)}°C';
-      case DashboardItem.usuariosAtivos:
-        return '130';
-      case DashboardItem.relatorios:
-        return '2 Novos';
-      case DashboardItem.notificacoes:
-        return '6';
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: const Text(
           'Dashboard',
@@ -143,44 +158,80 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         centerTitle: true,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
+        backgroundColor: colorScheme.primary,   // cor do fundo
+        foregroundColor: colorScheme.onPrimary, // cor dos ícones e textos
+        elevation: 4,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.brightness_6),
+            onPressed: widget.onToggleTheme,
+            tooltip: 'Alternar tema',
+          ),
+        ],
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(icon: Icon(Icons.dashboard), text: 'Resumo'),
+            Tab(icon: Icon(Icons.person), text: 'Usuários'),
+            Tab(icon: Icon(Icons.bar_chart), text: 'Relatórios'),
+            Tab(icon: Icon(Icons.notifications), text: 'Notificações'),
+          ],
+          indicatorColor: colorScheme.onPrimary,
+          labelColor: colorScheme.onPrimary,
+          unselectedLabelColor: colorScheme.onPrimary.withValues(alpha: 0.7),
+        ),
       ),
-      extendBodyBehindAppBar: true,
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              colorScheme.primary.withOpacity(0.8),
-              colorScheme.secondary.withOpacity(0.8),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.only(
-              top: kToolbarHeight + 32, left: 16, right: 16),
-          child: GridView.count(
-            crossAxisCount: _getCrossAxisCount(context),
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-            children: buildDashboardItems(),
-          ),
-        ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          _buildDashboardGrid(),
+          _buildSimpleText('Lista de Usuários'),
+          _buildSimpleText('Relatórios Recentes'),
+          _buildSimpleText('Notificações Recebidas'),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _isRefreshingAll ? null : _refreshAll,
         child: _isRefreshingAll
-            ? const SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  strokeWidth: 2,
-                ),
+            ? const CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                strokeWidth: 2,
               )
             : const Icon(Icons.refresh),
+      ),
+    );
+  }
+
+  Widget _buildDashboardGrid() {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            colorScheme.primary.withValues(alpha: 0.8),
+            colorScheme.secondary.withValues(alpha:0.8),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.only(top: kToolbarHeight, left: 16, right: 16),
+        child: GridView.count(
+          crossAxisCount: _getCrossAxisCount(context),
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+          children: buildDashboardItems(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSimpleText(String text) {
+    return Center(
+      child: Text(
+        text,
+        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
       ),
     );
   }
@@ -267,7 +318,7 @@ class _DashboardCardState extends State<DashboardCard> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: colorScheme.onPrimary,
+                color: colorScheme.onSecondary,
               ),
               textAlign: TextAlign.center,
             ),
