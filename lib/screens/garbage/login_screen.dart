@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import '../services/database_helper.dart';
-import '../models/user.dart';
+import '../../services/database_helper.dart';
+import '../../models/user.dart';
 import 'register_screen.dart';
 import 'home_screen.dart';
 
@@ -121,6 +121,7 @@ class _LoginScreenState extends State<LoginScreen> {
               child: CupertinoButton(
                 padding: const EdgeInsets.all(17),
                 color: Colors.greenAccent,
+                onPressed: _fazerLogin,
                 child: const Text(
                   "Acessar",
                   style: TextStyle(
@@ -129,7 +130,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                onPressed: _fazerLogin,
               ),
             ),
             const SizedBox(height: 7),
@@ -140,6 +140,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 borderRadius: BorderRadius.circular(7),
               ),
               child: CupertinoButton(
+                onPressed: _irParaCadastro,
                 child: const Text(
                   "Crie sua conta",
                   style: TextStyle(
@@ -148,7 +149,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                onPressed: _irParaCadastro,
               ),
             ),
           ],

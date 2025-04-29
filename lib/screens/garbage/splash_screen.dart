@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import '../login_screen.dart'; // Substitua pelo caminho correto se necessário
+import 'login_screen.dart'; // Substitua pelo caminho correto se necessário
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
